@@ -1,5 +1,7 @@
 # facenet-face-recognition
 
+Forked from [Skuldur/facenet-face-recognition](https://github.com/Skuldur/facenet-face-recognition).
+
 This repository contains a demonstration of face recognition using the FaceNet network (https://arxiv.org/pdf/1503.03832.pdf) and a webcam. Our implementation feeds frames from the webcam to the network to determine whether or not the frame contains an individual we recognize.
 
 ## How to use
