@@ -1,7 +1,6 @@
 from keras import backend as K
 import time
 from multiprocessing.dummy import Pool
-K.set_image_data_format('channels_first')
 import cv2
 import os
 import glob
@@ -12,84 +11,60 @@ from fr_utils import *
 from inception_blocks_v2 import *
 import imageio
 from keras.models import load_model
-# import os
+import os
 
+K.set_image_data_format('channels_first')
 PADDING = 50
 ready_to_detect_identity = True
 
 def triplet_loss(y_true, y_pred, alpha = 0.3):
+    """
+    Calculate the triplet_loss to find the difference between two images
+    """
     anchor, positive, negative = y_pred[0], y_pred[1], y_pred[2]
-    
+
     pos_dist = tf.reduce_sum(tf.square(tf.subtract(anchor, positive)), axis=-1)
     neg_dist = tf.reduce_sum(tf.square(tf.subtract(anchor, negative)), axis=-1)
     basic_loss = tf.add(tf.subtract(pos_dist, neg_dist), alpha)
     loss = tf.reduce_sum(tf.maximum(basic_loss, 0.0))
-    
+
     return loss
 
-# if os.path.isfile('models/frmodel.h5'):
-#     FRmodel = load_model('models/frmodel.h5')
-# else:
-FRmodel = faceRecoModel(input_shape = (3, 96, 96))
-FRmodel.compile(optimizer = 'adam', loss = triplet_loss, metrics = ['accuracy'])
-load_weights_from_FaceNet(FRmodel)
-# FRmodel.save('models/frmodel.h5')
+def load_face_recognition_model():
+    if os.path.isfile('models/frmodel.h5'):
+        print('Model is present')
+        model = load_model('models/frmodel.h5', custom_objects = {'triplet_loss': triplet_loss})
+    else:
+        model = faceRecoModel(input_shape = (3, 96, 96))
+        model.compile(optimizer = 'adam', loss = triplet_loss, metrics = ['accuracy'])
+        load_weights_from_FaceNet(model)
+        model.save('models/frmodel.h5')
+    return model
+
+FRmodel = load_face_recognition_model()
 
 def prepare_database():
     database = {}
-
     # load all the images of individuals to recognize into the database
     for file in glob.glob("images/*"):
         identity = os.path.splitext(os.path.basename(file))[0]
         database[identity] = img_path_to_encoding(file, FRmodel)
-
     return database
-
-def webcam_face_recognizer(database):
-    """
-    Runs a loop that extracts images from the computer's webcam and determines whether or not
-    it contains the face of a person in our database.
-
-    If it contains a face, an audio message will be played welcoming the user.
-    If not, the program will process the next frame from the webcam
-    """
-    global ready_to_detect_identity
-
-    cv2.namedWindow("preview")
-    vc = cv2.VideoCapture(0)
-
-    face_cascade = cv2.CascadeClassifier('haarcascade_frontalface_default.xml')
-    
-    while vc.isOpened():
-        _, frame = vc.read()
-        img = frame
-
-        # We do not want to detect a new identity while the program is in the process of identifying another person
-        if ready_to_detect_identity:
-            img = process_frame(img, frame, face_cascade)   
-        
-        key = cv2.waitKey(100)
-        cv2.imshow("preview", img)
-
-        if key == 27: # exit on ESC
-            break
-    cv2.destroyWindow("preview")
 
 def recognize_still_image(image):
     face_cascade = cv2.CascadeClassifier('haarcascade_frontalface_default.xml')
     image = process_frame(image, image, face_cascade)   
     return image
 
-# def show_image(image, identity):
-#     cv2.imshow(identity, image)
-#     cv2.waitKey(0)
-#     cv2.destroyAllWindows()
+def show_image(image, identity):
+    cv2.imshow(identity, image)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
 
 def process_frame(img, frame, face_cascade):
     """
     Determine whether the current frame contains the faces of people from our database
     """
-    global ready_to_detect_identity
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
     faces = face_cascade.detectMultiScale(gray, 1.3, 5)
 
@@ -100,33 +75,21 @@ def process_frame(img, frame, face_cascade):
         y1 = y - PADDING
         x2 = x + w + PADDING
         y2 = y + h + PADDING
-
-        img = cv2.rectangle(frame, (x1, y1), (x2, y2), (255,0,0), 2)
-
+        
         identity = find_identity(frame, x1, y1, x2, y2)
-        print(identity)
+        # print(identity)
 
         if identity is not None:
+            img = cv2.rectangle(frame, (x1, y1), (x2, y2), (255,0,0), 2)
+            font = cv2.FONT_HERSHEY_SIMPLEX
+            cv2.putText(img, identity,(x1, y1), font, 1, (255, 255, 255), 2, cv2.LINE_AA)
             identities.append(identity)
 
-    if identities != []:
-        cv2.imwrite('example.png',img)
-
-        ready_to_detect_identity = False
-        pool = Pool(processes=1) 
-        # We run this as a separate process so that the camera feedback does not freeze
-        pool.apply_async(welcome_users, [identities])
     return img
 
 def find_identity(frame, x1, y1, x2, y2):
     """
     Determine whether the face contained within the bounding box exists in our database
-
-    x1,y1_____________
-    |                 |
-    |                 |
-    |_________________x2,y2
-
     """
     height, width, channels = frame.shape
     # The padding is necessary since the OpenCV face detector creates the bounding box around the face and not the head
@@ -137,62 +100,31 @@ def find_identity(frame, x1, y1, x2, y2):
 def who_is_it(image, database, model):
     """
     Implements face recognition for the happy house by finding who is the person on the image_path image.
-    
-    Arguments:
-    image_path -- path to an image
-    database -- database containing image encodings along with the name of the person on the image
-    model -- your Inception model instance in Keras
-    
-    Returns:
-    min_dist -- the minimum distance between image_path encoding and the encodings from the database
-    identity -- string, the name prediction for the person on image_path
     """
     encoding = img_to_encoding(image, model)
-    
     min_dist = 100
     identity = None
     
     # Loop over the database dictionary's names and encodings.
     for (name, db_enc) in database.items():
-        
         # Compute L2 distance between the target "encoding" and the current "emb" from the database.
         dist = np.linalg.norm(db_enc - encoding)
-
         print('distance for %s is %s' %(name, dist))
-
         # If this distance is less than the min_dist, then set min_dist to dist, and identity to name
         if dist < min_dist:
             min_dist = dist
             identity = name
     
-    if min_dist > 0.52:
+    if min_dist > 0.7:
         return None
     else:
         return str(identity)
 
-def welcome_users(identities):
-    """ Outputs a welcome audio message to the users """
-    global ready_to_detect_identity
-    welcome_message = 'Welcome '
-
-    if len(identities) == 1:
-        welcome_message += '%s, have a nice day.' % identities[0]
-    else:
-        for identity_id in range(len(identities)-1):
-            welcome_message += '%s, ' % identities[identity_id]
-        welcome_message += 'and %s, ' % identities[-1]
-        welcome_message += 'have a nice day!'
-
-    # Allow the program to start detecting identities again
-    ready_to_detect_identity = True
-
 if __name__ == "__main__":
     database = prepare_database()
-    # webcam_face_recognizer(database)
     image = imageio.imread('test/test1.jpg')
     out_image = recognize_still_image(image)
-    imageio.imsave('test/out1.jpg', out_image)
-    print('Completed...')
+    imageio.imwrite('out.jpg', out_image)
 
 # ### References:
 # 
