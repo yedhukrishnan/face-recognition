@@ -10,43 +10,30 @@ from numpy import genfromtxt
 import tensorflow as tf
 from fr_utils import *
 from inception_blocks_v2 import *
-import win32com.client as wincl
+import imageio
+from keras.models import load_model
+# import os
 
 PADDING = 50
 ready_to_detect_identity = True
-windows10_voice_interface = wincl.Dispatch("SAPI.SpVoice")
-
-FRmodel = faceRecoModel(input_shape=(3, 96, 96))
 
 def triplet_loss(y_true, y_pred, alpha = 0.3):
-    """
-    Implementation of the triplet loss as defined by formula (3)
-    
-    Arguments:
-    y_pred -- python list containing three objects:
-            anchor -- the encodings for the anchor images, of shape (None, 128)
-            positive -- the encodings for the positive images, of shape (None, 128)
-            negative -- the encodings for the negative images, of shape (None, 128)
-    
-    Returns:
-    loss -- real number, value of the loss
-    """
-    
     anchor, positive, negative = y_pred[0], y_pred[1], y_pred[2]
     
-    # Step 1: Compute the (encoding) distance between the anchor and the positive, you will need to sum over axis=-1
     pos_dist = tf.reduce_sum(tf.square(tf.subtract(anchor, positive)), axis=-1)
-    # Step 2: Compute the (encoding) distance between the anchor and the negative, you will need to sum over axis=-1
     neg_dist = tf.reduce_sum(tf.square(tf.subtract(anchor, negative)), axis=-1)
-    # Step 3: subtract the two previous distances and add alpha.
     basic_loss = tf.add(tf.subtract(pos_dist, neg_dist), alpha)
-    # Step 4: Take the maximum of basic_loss and 0.0. Sum over the training examples.
     loss = tf.reduce_sum(tf.maximum(basic_loss, 0.0))
     
     return loss
 
+# if os.path.isfile('models/frmodel.h5'):
+#     FRmodel = load_model('models/frmodel.h5')
+# else:
+FRmodel = faceRecoModel(input_shape = (3, 96, 96))
 FRmodel.compile(optimizer = 'adam', loss = triplet_loss, metrics = ['accuracy'])
 load_weights_from_FaceNet(FRmodel)
+# FRmodel.save('models/frmodel.h5')
 
 def prepare_database():
     database = {}
@@ -88,6 +75,16 @@ def webcam_face_recognizer(database):
             break
     cv2.destroyWindow("preview")
 
+def recognize_still_image(image):
+    face_cascade = cv2.CascadeClassifier('haarcascade_frontalface_default.xml')
+    image = process_frame(image, image, face_cascade)   
+    return image
+
+# def show_image(image, identity):
+#     cv2.imshow(identity, image)
+#     cv2.waitKey(0)
+#     cv2.destroyAllWindows()
+
 def process_frame(img, frame, face_cascade):
     """
     Determine whether the current frame contains the faces of people from our database
@@ -99,14 +96,15 @@ def process_frame(img, frame, face_cascade):
     # Loop through all the faces detected and determine whether or not they are in the database
     identities = []
     for (x, y, w, h) in faces:
-        x1 = x-PADDING
-        y1 = y-PADDING
-        x2 = x+w+PADDING
-        y2 = y+h+PADDING
+        x1 = x - PADDING
+        y1 = y - PADDING
+        x2 = x + w + PADDING
+        y2 = y + h + PADDING
 
-        img = cv2.rectangle(frame,(x1, y1),(x2, y2),(255,0,0),2)
+        img = cv2.rectangle(frame, (x1, y1), (x2, y2), (255,0,0), 2)
 
         identity = find_identity(frame, x1, y1, x2, y2)
+        print(identity)
 
         if identity is not None:
             identities.append(identity)
@@ -185,14 +183,16 @@ def welcome_users(identities):
         welcome_message += 'and %s, ' % identities[-1]
         welcome_message += 'have a nice day!'
 
-    windows10_voice_interface.Speak(welcome_message)
-
     # Allow the program to start detecting identities again
     ready_to_detect_identity = True
 
 if __name__ == "__main__":
     database = prepare_database()
-    webcam_face_recognizer(database)
+    # webcam_face_recognizer(database)
+    image = imageio.imread('test/test1.jpg')
+    out_image = recognize_still_image(image)
+    imageio.imsave('test/out1.jpg', out_image)
+    print('Completed...')
 
 # ### References:
 # 
