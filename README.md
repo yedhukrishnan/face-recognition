@@ -1,8 +1,8 @@
-# facenet-face-recognition
+# face-recognition
 
 Forked from [Skuldur/facenet-face-recognition](https://github.com/Skuldur/facenet-face-recognition). Thank you [Skuldur](https://github.com/Skuldur) for writing awesome code!
 
-This repository contains a demonstration of face recognition using the FaceNet network (https://arxiv.org/pdf/1503.03832.pdf).
+This repository contains a demonstration of face recognition using the [FaceNet](https://arxiv.org/pdf/1503.03832.pdf) network .
 
 ## Up and Running
 
