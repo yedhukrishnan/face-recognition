@@ -46,7 +46,7 @@ FRmodel = load_face_recognition_model()
 def prepare_database():
     database = {}
     # load all the images of individuals to recognize into the database
-    for file in glob.glob("images/*"):
+    for file in glob.glob("database/*"):
         identity = os.path.splitext(os.path.basename(file))[0]
         database[identity] = img_path_to_encoding(file, FRmodel)
     return database
@@ -122,9 +122,12 @@ def who_is_it(image, database, model):
 
 if __name__ == "__main__":
     database = prepare_database()
-    image = imageio.imread('test/test1.jpg')
-    out_image = recognize_still_image(image)
-    imageio.imwrite('out.jpg', out_image)
+    image_list = glob.glob('input/*')
+    print(image_list)
+    for (i, image_name) in enumerate(image_list):
+        image = imageio.imread(image_name)
+        output = recognize_still_image(image)
+        imageio.imwrite('output/' + str(i) + '.jpg', output)
 
 # ### References:
 # 
