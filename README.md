@@ -1,6 +1,6 @@
 # face-recognition
 
-Forked from [Skuldur/facenet-face-recognition](https://github.com/Skuldur/facenet-face-recognition). Thank you [Skuldur](https://github.com/Skuldur) for writing awesome code!
+This project combines the best ideas from [Skuldur/facenet-face-recognition](https://github.com/Skuldur/facenet-face-recognition) and [Sefik Ilkin Serengil](https://sefiks.com/2018/09/03/face-recognition-with-facenet-in-keras/). Thank you for writing awesome code and tutorials!
 
 This repository contains a demonstration of face recognition using the [FaceNet](https://arxiv.org/pdf/1503.03832.pdf) network .
 
@@ -9,6 +9,8 @@ This repository contains a demonstration of face recognition using the [FaceNet]
 To install all the requirements for the project run
 
 	pip install -r requirements.txt
+
+Download the model, [facenet_keras.h5](https://www.dropbox.com/s/xwn57bffg5xobb8/facenet_keras.h5?dl=1) and put it in `models` directory.
 	
 Keep the face images of people you want to recognize in `databases` directory. 
 

@@ -3,7 +3,3 @@ keras
 scipy
 scikit-learn
 opencv-python
-h5py
-matplotlib
-pypiwin32
-imageio
