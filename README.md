@@ -2,7 +2,7 @@
 
 This project combines the best ideas from [Skuldur/facenet-face-recognition](https://github.com/Skuldur/facenet-face-recognition) and [Sefik Ilkin Serengil](https://sefiks.com/2018/09/03/face-recognition-with-facenet-in-keras/). Thank you for writing awesome code and tutorials!
 
-This repository contains a demonstration of face recognition using the [FaceNet](https://arxiv.org/pdf/1503.03832.pdf) network .
+This repository contains a demonstration of face recognition using the [FaceNet](https://arxiv.org/pdf/1503.03832.pdf) network  and one-shot learning.
 
 ## Up and Running
 
