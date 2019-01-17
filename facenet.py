@@ -42,17 +42,23 @@ def load_face_recognition_model():
     return model
 
 FRmodel = load_face_recognition_model()
+face_cascade = cv2.CascadeClassifier('haarcascade_frontalface_default.xml')
 
 def prepare_database():
     database = {}
     # load all the images of individuals to recognize into the database
     for file in glob.glob("database/*"):
         identity = os.path.splitext(os.path.basename(file))[0]
-        database[identity] = img_path_to_encoding(file, FRmodel)
+        image = imageio.imread(file)
+        
+        (x1, y1, x2, y2) = extract_faces(image, face_cascade)[0]
+        height, width, channels = image.shape
+        face_image = image[max(0, y1):min(height, y2), max(0, x1):min(width, x2)]
+        
+        database[identity] = img_to_encoding(face_image, FRmodel)
     return database
 
 def recognize_still_image(image):
-    face_cascade = cv2.CascadeClassifier('haarcascade_frontalface_default.xml')
     image = process_frame(image, image, face_cascade)   
     return image
 
@@ -60,6 +66,19 @@ def show_image(image, identity):
     cv2.imshow(identity, image)
     cv2.waitKey(0)
     cv2.destroyAllWindows()
+
+def extract_faces(image, face_cascade):
+    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    all_faces = face_cascade.detectMultiScale(gray, 1.3, 5)
+    face_coordinates = []
+    
+    for (x, y, w, h) in all_faces:
+        x1 = x - PADDING
+        y1 = y - PADDING
+        x2 = x + w + PADDING
+        y2 = y + h + PADDING
+        face_coordinates.append([x1, y1, x2, y2])
+    return face_coordinates
 
 def process_frame(img, frame, face_cascade):
     """
@@ -70,11 +89,7 @@ def process_frame(img, frame, face_cascade):
 
     # Loop through all the faces detected and determine whether or not they are in the database
     identities = []
-    for (x, y, w, h) in faces:
-        x1 = x - PADDING
-        y1 = y - PADDING
-        x2 = x + w + PADDING
-        y2 = y + h + PADDING
+    for (x1, y1, x2, y2) in extract_faces(image, face_cascade):
         
         identity = find_identity(frame, x1, y1, x2, y2)
         # print(identity)
