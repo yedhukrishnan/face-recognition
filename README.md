@@ -2,7 +2,7 @@
 
 This project combines the best ideas from [Skuldur/facenet-face-recognition](https://github.com/Skuldur/facenet-face-recognition) and [Sefik Ilkin Serengil](https://sefiks.com/2018/09/03/face-recognition-with-facenet-in-keras/). Thank you for writing awesome code and tutorials!
 
-This repository contains a demonstration of face recognition using the [FaceNet](https://arxiv.org/pdf/1503.03832.pdf) network  and one-shot learning.
+This repository contains a demonstration of face recognition using the [FaceNet](https://arxiv.org/pdf/1503.03832.pdf) network  and one-shot learning. It uses a pretrained model to encode the images and uses Euclidean distance to find the difference. If you need a quick introduction to FaceNet and one-shot learning, refer this: [Making your own Face Recognition System](https://medium.freecodecamp.org/making-your-own-face-recognition-system-29a8e728107c).
 
 ## Up and Running
 
