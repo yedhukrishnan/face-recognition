@@ -5,7 +5,7 @@ import glob
 import numpy as np
 
 model = load_model('models/facenet_keras.h5')
-face_cascade = cv2.CascadeClassifier('haarcascade_frontalface_default.xml')
+face_cascade = cv2.CascadeClassifier('models/haarcascade_frontalface_default.xml')
 
 def euclidean_distance(image1, image2):
     distance = image1 - image2
